@@ -1,5 +1,5 @@
 import pefile
-import elftools
+from elftools.elf.elffile import ELFFile
 
 filename = "lsd"
 
@@ -14,6 +14,7 @@ def osCheck(filename):
         print("windows")
 
     if b'ELF' in firstLine:
+        liBitChecker(file)
         file.close()
         print("linux")
 
@@ -24,5 +25,10 @@ def winBitChecker(filename):
         print("32bit") 
     else:
         print("64bit")
+
+def liBitChecker(file):
+    elf = ELFFile(file)
+    print(elf.header.e_ehsize)
+
 
 osCheck(filename)
