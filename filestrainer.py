@@ -1,7 +1,7 @@
 import pefile
 from elftools.elf.elffile import ELFFile
 
-filename = "lsd"
+filename = "test.exe"
 
 # 실행파일 체크
 def osCheck(filename):
@@ -9,14 +9,16 @@ def osCheck(filename):
     firstLine = file.readline()
 
     if b'MZ' in firstLine:
+        print("Filename: " + filename)
+        print("OS: windows")
         winBitChecker(filename)
         file.close()
-        print("windows")
-
+        
     if b'ELF' in firstLine:
+        print("Filename: " + filename)
+        print("OS: linux")
         liBitChecker(file)
         file.close()
-        print("linux")
 
 def winBitChecker(filename):
     pe = pefile.PE(filename, fast_load=True)
@@ -28,7 +30,10 @@ def winBitChecker(filename):
 
 def liBitChecker(file):
     elf = ELFFile(file)
-    print(elf.header.e_ehsize)
-
+    flags = elf.header.e_ehsize
+    if flags == 64:
+        print("64bit")
+    else:
+        print("32bit")
 
 osCheck(filename)
