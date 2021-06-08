@@ -1,6 +1,20 @@
 import pefile
 from elftools.elf.elffile import ELFFile
-import elftools
+import argparse
+import os
+
+parser = argparse.ArgumentParser(description='Argparse Tutorial')
+parser.add_argument('-d', '--dir', type=str, 
+                    help='체크할 경로를 넣어주세요', default=os.getcwd())
+
+args = parser.parse_args()
+folder = args.dir
+fileList = []
+
+for filename in os.listdir(folder):
+    if os.path.isfile(filename):
+        fileList.append(folder + '\\' + filename)
+
 
 packers_sections = {
         #The packer/protector/tools section names/keywords
@@ -82,75 +96,78 @@ packers_sections = {
         '.yP': 'Y0da Protector',
         '.y0da': 'Y0da Protector',
     }
-
-filename = "cat"
+packers_sections_lower = {x.lower(): x for x in packers_sections.keys()}
 
 # 실행파일 체크
 def osCheck(filename):
+    outputList = []
     file = open(filename, 'rb')
     firstLine = file.readline()
 
+    outputList.append(filename)
+
     if b'MZ' in firstLine:
-        print("Filename: " + filename)
-        print("OS: windows")
-        winBitCheck(filename)
+        #print("windows")
+        outputList.append("windows")
+        outputList.append(winBitCheck(filename))
+        outputList.append(winCompressCheck(filename))
         file.close()
         
     if b'ELF' in firstLine:
-        print("Filename: " + filename)
-        print("OS: linux")
-        liBitCheck(file)
+        #print("linux")
+        outputList.append("linux")
+        outputList.append(linBitCheck(file))
+        #linCompressCheck(filename)
         file.close()
+    return outputList
 
 def winBitCheck(filename):
     pe = pefile.PE(filename, fast_load=True)
 
     if hex(pe.FILE_HEADER.Machine) == '0x14c':
-        print("32bit") 
+        return "32"
     else:
-        print("64bit")
+        return "64"
 
-def winCompressCheck():
-    print("hello")
-
-def liBitCheck(file):
-    elf = ELFFile(file)
-    flags = elf.elfclass
-    if flags == 64:
-        print("64bit")
-    else:
-        print("32bit")
-
-def detect_packing(sections_of_pe):
-    return [packers_sections_lower[x.lower()] for x in sections_of_pe if x.lower() in packers_sections_lower.keys()]
-
-packers_sections_lower = {x.lower(): x for x in packers_sections.keys()}
-
-
-#finally let's parse the exe file with pefile and get sections names
-try:
-  #parse the files
-    #exe = pefile.PE("test.exe", fast_load=True)
-    elf = open('lspack', 'rb')
-    test = elf.readline()
-    for a in packers_sections_lower:
-        #print(str(test.lower()))
-        if a in str(test.lower()):
-            print('linux packers matched')
-except:
-    print('manuel exception')
-
-#finally let's parse the exe file with pefile and get sections names
-try:
-  #parse the files
-    exe = pefile.PE("test.exe", fast_load=True)
+def winCompressCheck(filename):
+    #print(filename)
+    exe = pefile.PE(filename, fast_load=True)
     matches = detect_packing([
         section.Name.decode(errors='replace',).rstrip('\x00') for section in exe.sections
     ])
     if matches:
-        print('packers matched')
-        print(matches)
-except:
-    print('manuel exception')
+        return "compressed"
+        #print(matches)
+    else:
+        return "no"
 
-osCheck(filename)
+def linCompressCheck(filename):
+    elf = open(filename, 'rb')
+    elfLine = elf.readline()
+
+    matches = detect_packing([
+        section.Name.decode(errors='replace',).rstrip('\x00') for section in elfLine
+    ])
+    '''
+    for a in packers_sections_lower:
+        #print(str(test.lower()))
+        if a in str(elfLine.lower()):
+            print('compressed')
+            break
+    print("no compression")
+    '''
+
+def linBitCheck(file):
+    elf = ELFFile(file)
+    flags = elf.elfclass
+    if flags == 64:
+        return "64"
+    else:
+        return "32"
+
+def detect_packing(sections_of_pe):
+    return [packers_sections_lower[x.lower()] for x in sections_of_pe if x.lower() in packers_sections_lower.keys()]
+
+for i in fileList:
+    #print(i.replace("\\", '\\\\'))
+    print(osCheck(i))
